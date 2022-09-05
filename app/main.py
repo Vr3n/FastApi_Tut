@@ -1,12 +1,6 @@
-import os
-import psycopg2
-import time
-from psycopg2.extras import RealDictCursor
-from typing import Dict, Optional
 from fastapi import FastAPI, Response, status, HTTPException, Depends
 from sqlalchemy.orm import Session
-from .schemas import Post
-from . import models
+from . import models, schemas, utils
 from .database import engine, get_db
 
 app = FastAPI()
@@ -55,7 +49,7 @@ def get_posts(db: Session = Depends(get_db)):
 
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
-def create_post(post: Post, db: Session = Depends(get_db)):
+def create_post(post: schemas.Post, db: Session = Depends(get_db)):
     # cursor.execute(
     #     """
     #     INSERT INTO post (title, content, published) VALUES
@@ -117,7 +111,7 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 
 
 @app.put("/posts/{id}")
-def update_post(id: int, updated_post: Post, db: Session = Depends(get_db)):
+def update_post(id: int, updated_post: schemas.Post, db: Session = Depends(get_db)):
     # cursor.execute(
     #     """
     #     UPDATE post
@@ -165,3 +159,27 @@ def publish_post(id: int, db: Session = Depends(get_db)):
                       "published": published})
 
     return {"message": f"Post {id} Published Successfully!", "data": post}
+
+
+@app.post('/auth/users', status_code=status.HTTP_201_CREATED, response_model=schemas.UserResponse)
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+
+    user.password = utils.hash_password(user.password)
+
+    new_user = models.User(**user.dict())
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return new_user
+
+
+@app.get('/auth/users/{id}', response_model=schemas.UserResponse)
+def get_user(id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == id).first()
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"User with id: {id} does not exist.")
+
+    return user
