@@ -7,6 +7,17 @@ class Post(BaseModel):
     content: str
     published: bool = False
 
+    class Config:
+        orm_mode = True
+
+class PostResponse(Post):
+    id: int
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
 
 class UserCreate(BaseModel):
     email: EmailStr
