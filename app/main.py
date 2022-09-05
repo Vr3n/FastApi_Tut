@@ -1,8 +1,14 @@
-from turtle import update
+import os
+import psycopg2
+import time
+from psycopg2.extras import RealDictCursor
 from typing import Dict, Optional
 from fastapi import FastAPI, Response, status, HTTPException
 from fastapi.params import Body
 from pydantic import BaseModel
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -13,7 +19,22 @@ class Post(BaseModel):
     title: str
     content: str
     published: bool = False
-    rating: Optional[int] = None
+
+
+while True:
+    try:
+        conn = psycopg2.connect(
+            host=os.environ.get('PG_HOST'),
+            database=os.environ.get('PG_DATABASE'),
+            user=os.environ.get("PG_USER"),
+            password=os.environ.get('PG_PASSWORD'),
+            cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
+        print("Database Connected Successfully!")
+        break
+    except Exception as err:
+        print(Exception(f"Conn Failure: {err}"))
+        time.sleep(5)
 
 
 def find_post(id: int) -> Post:
