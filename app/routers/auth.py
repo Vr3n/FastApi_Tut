@@ -14,11 +14,11 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
         models.User.email == user_credentials.username).first()
 
     if not user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="Incorrect Credentials Provided!")
 
     if not utils.verify_password(user_credentials.password, user.password):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="Incorrect Credentials Provided!")
 
     access_token = oauth2.create_access_token(data={"user_id": user.id})
