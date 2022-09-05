@@ -53,42 +53,92 @@ def root():
 
 @app.get("/posts")
 def get_posts():
-    return my_posts
+    cursor.execute("""
+        SELECT * FROM post
+    """)
+    posts = cursor.fetchall()
+    return posts
 
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_post(post: Post):
-    my_posts.append(post)
-    return {"data": "created!"}
+    cursor.execute(
+        """
+        INSERT INTO post (title, content, published) VALUES
+        (%s,%s,%s)
+        RETURNING *;
+    """, (post.title, post.content, post.published))
+    new_post = cursor.fetchone()
+    conn.commit()
+    return {"data": new_post, "message": "post created successfully!"}
 
 
 @app.get("/posts/{id}")
 def get_post(id: int, response: Response):
-
-    post = find_post(id)
+    cursor.execute(
+        """
+        SELECT * FROM post
+        WHERE id=%s;
+        """, str(id)
+    )
+    post = cursor.fetchone()
     if not post:
         # response.status_code = status.HTTP_404_NOT_FOUND
         # return {"message": "Post {id} does not exist."}
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Post {id} does not exist.")
-    return {"post": post}
+    return post
 
 
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int, response: Response):
-    post = find_post(id)
+    cursor.execute(
+        """
+        DELETE FROM post
+        WHERE id=%s
+        RETURNING *;
+        """,
+        str(id)
+    )
+    post = cursor.fetchone()
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Post {id} does not exist.")
-    my_posts.remove(post)
+    conn.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.put("/posts/{id}")
 def update_post(id: int, updated_post: Post, response: Response):
-    post = find_post(id)
+    cursor.execute(
+        """
+        UPDATE post
+        SET title=%s,
+            content=%s
+        WHERE id=%s
+        RETURNING *;
+        """, (updated_post.title, updated_post.content, str(id))
+    )
+    post = cursor.fetchone()
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Post {id} does not exist.")
-    my_posts[id] = updated_post
-    return {"message": "Updated Successfully", "post": updated_post}
+    return {"message": "Updated Successfully", "data": updated_post}
+
+
+@app.put("/posts/{id}/publish")
+def publish_post(id: int, response: Response):
+    published = True
+    cursor.execute(
+        """
+        UPDATE post
+        SET published=%s 
+        WHERE id=%s
+        RETURNING *;
+        """, (published, str(id))
+    )
+    post = cursor.fetchone()
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"Post {id} does not exist.")
+    return {"message": f"Post {id} Published Successfully!", "data": post}
