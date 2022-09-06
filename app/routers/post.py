@@ -21,8 +21,7 @@ def get_posts(db: Session = Depends(get_db)):
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PostResponse)
-def create_post(post: schemas.Post, db: Session = Depends(get_db), user_id: int = Depends(oauth2.get_current_user)):
-    print(user_id)
+def create_post(post: schemas.Post, db: Session = Depends(get_db), current_user: schemas.CurrentUserResponse = Depends(oauth2.get_current_user)):
     new_post = models.Post(**post.dict())
     db.add(new_post)
     db.commit()
@@ -30,7 +29,7 @@ def create_post(post: schemas.Post, db: Session = Depends(get_db), user_id: int 
     return new_post
 
 
-@router.get("/{id}",response_model=schemas.PostResponse)
+@router.get("/{id}", response_model=schemas.PostResponse)
 def get_post(id: int, db: Session = Depends(get_db)):
     # cursor.execute(
     #     """
@@ -51,7 +50,7 @@ def get_post(id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id: int, db: Session = Depends(get_db)):
+def delete_post(id: int, db: Session = Depends(get_db), current_user: schemas.CurrentUserResponse = Depends(oauth2.get_current_user)):
     # cursor.execute(
     #     """
     #     DELETE FROM post
@@ -75,7 +74,7 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{id}", response_model=schemas.PostResponse)
-def update_post(id: int, updated_post: schemas.Post, db: Session = Depends(get_db)):
+def update_post(id: int, updated_post: schemas.Post, db: Session = Depends(get_db), current_user: schemas.CurrentUserResponse = Depends(oauth2.get_current_user)):
     # cursor.execute(
     #     """
     #     UPDATE post
@@ -100,7 +99,7 @@ def update_post(id: int, updated_post: schemas.Post, db: Session = Depends(get_d
 
 
 @router.patch("/{id}/publish", response_model=schemas.PostResponse)
-def publish_post(id: int, db: Session = Depends(get_db)):
+def publish_post(id: int, db: Session = Depends(get_db), current_user: schemas.CurrentUserResponse = Depends(oauth2.get_current_user)):
     published = True
     # cursor.execute(
     #     """

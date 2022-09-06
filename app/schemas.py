@@ -33,6 +33,13 @@ class UserResponse(BaseModel):
     class Config:
         orm_mode = True
 
+class CurrentUserResponse(BaseModel):
+    id: int
+    email: EmailStr
+
+    class Config:
+        orm_mode = True
+
 
 class UserLogin(BaseModel):
     email: EmailStr
