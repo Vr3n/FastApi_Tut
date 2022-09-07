@@ -6,7 +6,7 @@ from sqlalchemy.sql.expression import text
 
 
 class Post(Base):
-    __tablename__ = "post"
+    __tablename__ = "posts"
 
     id = Column(Integer, primary_key=True, nullable=False)
     title = Column(String, nullable=False)
@@ -37,4 +37,4 @@ class Vote(Base):
     user_id = Column(Integer, ForeignKey(
         "users.id", ondelete="CASCADE"), primary_key=True)
     post_id = Column(Integer, ForeignKey(
-        "post.id", ondelete="CASCADE"), primary_key=True)
+        "posts.id", ondelete="CASCADE"), primary_key=True)
