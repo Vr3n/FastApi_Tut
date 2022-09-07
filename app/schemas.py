@@ -75,5 +75,13 @@ class PostResponse(PostBase):
         orm_mode = True
 
 
+class PostVoteResponse(BaseModel):
+    Post: Post
+    votes: int
+
+    class Config:
+        orm_mode = True
+
+
 class Vote(BaseModel):
     post_id: int
