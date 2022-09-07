@@ -12,17 +12,13 @@ router = APIRouter(
 
 @router.get("/", response_model=List[schemas.PostResponse])
 def get_posts(db: Session = Depends(get_db)):
-    # cursor.execute("""
-    #     SELECT * FROM post
-    # """)
-    # posts = cursor.fetchall()
     posts = db.query(models.Post).all()
     return posts
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PostResponse)
-def create_post(post: schemas.Post, db: Session = Depends(get_db), current_user: schemas.CurrentUserResponse = Depends(oauth2.get_current_user)):
-    new_post = models.Post(**post.dict())
+def create_post(post: schemas.PostCreate, db: Session = Depends(get_db), current_user: schemas.CurrentUserResponse = Depends(oauth2.get_current_user)):
+    new_post = models.Post(owner_id=current_user.id, **post.dict())
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
@@ -31,13 +27,6 @@ def create_post(post: schemas.Post, db: Session = Depends(get_db), current_user:
 
 @router.get("/{id}", response_model=schemas.PostResponse)
 def get_post(id: int, db: Session = Depends(get_db)):
-    # cursor.execute(
-    #     """
-    #     SELECT * FROM post
-    #     WHERE id=%s;
-    #     """, str(id)
-    # )
-    # post = cursor.fetchone()
 
     post = db.query(models.Post).filter(models.Post.id == id).first()
 
@@ -51,21 +40,16 @@ def get_post(id: int, db: Session = Depends(get_db)):
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int, db: Session = Depends(get_db), current_user: schemas.CurrentUserResponse = Depends(oauth2.get_current_user)):
-    # cursor.execute(
-    #     """
-    #     DELETE FROM post
-    #     WHERE id=%s
-    #     RETURNING *;
-    #     """,
-    #     str(id)
-    # )
-    # post = cursor.fetchone()
 
     post = db.query(models.Post).filter(models.Post.id == id)
 
     if not post.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Post {id} does not exist.")
+
+    if post.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Not Authorized to Perform request at action.")
 
     post.delete(synchronize_session=False)
     db.commit()
@@ -74,17 +58,7 @@ def delete_post(id: int, db: Session = Depends(get_db), current_user: schemas.Cu
 
 
 @router.put("/{id}", response_model=schemas.PostResponse)
-def update_post(id: int, updated_post: schemas.Post, db: Session = Depends(get_db), current_user: schemas.CurrentUserResponse = Depends(oauth2.get_current_user)):
-    # cursor.execute(
-    #     """
-    #     UPDATE post
-    #     SET title=%s,
-    #         content=%s
-    #     WHERE id=%s
-    #     RETURNING *;
-    #     """, (updated_post.title, updated_post.content, str(id))
-    # )
-    # post = cursor.fetchone()
+def update_post(id: int, updated_post: schemas.PostUpdate, db: Session = Depends(get_db), current_user: schemas.CurrentUserResponse = Depends(oauth2.get_current_user)):
     post_query = db.query(models.Post).filter(models.Post.id == id)
 
     post = post_query.first()
@@ -92,6 +66,11 @@ def update_post(id: int, updated_post: schemas.Post, db: Session = Depends(get_d
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Post {id} does not exist.")
+
+    if post.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Not Authorized to Perform request at action.")
+
     post_query.update(updated_post.dict())
     db.commit()
     db.refresh(post)
@@ -101,15 +80,6 @@ def update_post(id: int, updated_post: schemas.Post, db: Session = Depends(get_d
 @router.patch("/{id}/publish", response_model=schemas.PostResponse)
 def publish_post(id: int, db: Session = Depends(get_db), current_user: schemas.CurrentUserResponse = Depends(oauth2.get_current_user)):
     published = True
-    # cursor.execute(
-    #     """
-    #     UPDATE post
-    #     SET published=%s
-    #     WHERE id=%s
-    #     RETURNING *;
-    #     """, (published, str(id))
-    # )
-    # post = cursor.fetchone()
 
     post_query = db.query(models.Post).filter(models.Post.id == id)
 

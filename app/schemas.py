@@ -3,19 +3,29 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr
 
 
-class Post(BaseModel):
+class PostBase(BaseModel):
     title: str
     content: str
     published: bool = False
+
+class PostResponse(PostBase):
+    id: int
+    created_at: datetime
     owner_id: int
 
     class Config:
         orm_mode = True
 
+class PostCreate(PostBase):
+    pass
 
-class PostResponse(Post):
+class PostUpdate(PostBase):
+    pass
+
+class Post(PostBase):
     id: int
     created_at: datetime
+    owner_id: int
 
     class Config:
         orm_mode = True
