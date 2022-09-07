@@ -1,5 +1,5 @@
 
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Response, status, HTTPException, Depends
 from sqlalchemy.orm import Session
 from .. import models, schemas, oauth2
@@ -11,8 +11,11 @@ router = APIRouter(
 
 
 @router.get("/", response_model=List[schemas.PostResponse])
-def get_posts(db: Session = Depends(get_db)):
-    posts = db.query(models.Post).all()
+def get_posts(db: Session = Depends(get_db), limit: int = 10, search: Optional[str] = ""):
+
+    posts = db.query(
+        models.Post).filter(
+            models.Post.title.contains(search)).order_by(models.Post.created_at.desc()).limit(limit).all()
     return posts
 
 
@@ -47,7 +50,7 @@ def delete_post(id: int, db: Session = Depends(get_db), current_user: schemas.Cu
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Post {id} does not exist.")
 
-    if post.owner_id != current_user.id:
+    if post.first().owner_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=f"Not Authorized to Perform request at action.")
 

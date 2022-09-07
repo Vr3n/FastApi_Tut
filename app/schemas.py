@@ -8,19 +8,14 @@ class PostBase(BaseModel):
     content: str
     published: bool = False
 
-class PostResponse(PostBase):
-    id: int
-    created_at: datetime
-    owner_id: int
-
-    class Config:
-        orm_mode = True
 
 class PostCreate(PostBase):
     pass
 
+
 class PostUpdate(PostBase):
     pass
+
 
 class Post(PostBase):
     id: int
@@ -44,6 +39,7 @@ class UserResponse(BaseModel):
     class Config:
         orm_mode = True
 
+
 class CurrentUserResponse(BaseModel):
     id: int
     email: EmailStr
@@ -59,9 +55,21 @@ class UserLogin(BaseModel):
     class Config:
         orm_mode = True
 
+
 class Token(BaseModel):
     access_token: str
     token_type: str
 
+
 class TokenData(BaseModel):
     id: Optional[str] = None
+
+
+class PostResponse(PostBase):
+    id: int
+    created_at: datetime
+    # owner_id: int
+    owner: UserResponse
+
+    class Config:
+        orm_mode = True
