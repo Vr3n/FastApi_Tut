@@ -34,8 +34,6 @@ def get_post(id: int, db: Session = Depends(get_db)):
     post = db.query(models.Post).filter(models.Post.id == id).first()
 
     if not post:
-        # response.status_code = status.HTTP_404_NOT_FOUND
-        # return {"message": "Post {id} does not exist."}
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Post {id} does not exist.")
     return post
